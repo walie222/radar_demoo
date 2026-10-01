@@ -1,0 +1,270 @@
+/* ============================================
+   冒头大作战 - 指向联控版 样式表
+   ============================================ */
+
+/* ---- Error Overlay ---- */
+.error-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+}
+.error-box {
+    background: #1a1a2e; border: 2px solid #ff4444;
+    border-radius: 16px; padding: 40px; max-width: 500px; text-align: center;
+}
+.error-box h2 { color: #ff4444; margin-bottom: 15px; }
+.error-box p { color: #ccc; margin-bottom: 20px; line-height: 1.6; }
+
+/* ---- 全局 ---- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    min-height: 100vh; color: #fff; overflow-x: hidden;
+}
+.container { max-width: 800px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255,200,0,0.5); }
+.subtitle { font-size: 1.2em; color: #aaa; margin-bottom: 30px; }
+h2 { font-size: 2em; margin-bottom: 20px; }
+
+.device-hint {
+    background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px; padding: 12px 20px; margin: 0 auto 20px; max-width: 500px;
+    font-size: 0.95em; color: #ffd700;
+}
+
+/* ---- 屏幕切换 ---- */
+.screen { display: none; animation: fadeIn 0.5s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.hidden { display: none !important; }
+
+/* ---- 登录框 ---- */
+.login-box {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 40px; margin: 30px auto; max-width: 500px;
+    backdrop-filter: blur(10px);
+}
+.form-group { margin-bottom: 20px; text-align: left; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #ddd; }
+.form-group input {
+    width: 100%; padding: 12px 16px; border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1em;
+    transition: border-color 0.3s;
+}
+.form-group input:focus { outline: none; border-color: #ffd700; }
+.hint { color: #888; font-size: 0.9em; margin-top: 15px; }
+
+/* ---- 按钮 ---- */
+.btn-primary {
+    background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; border: none;
+    padding: 14px 40px; font-size: 1.1em; font-weight: 700; border-radius: 30px;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,215,0,0.5); }
+.btn-primary:disabled { background: #555; color: #999; cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-secondary {
+    background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    padding: 10px 30px; font-size: 1em; border-radius: 25px; cursor: pointer;
+    transition: all 0.3s; margin-top: 10px;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.2); }
+
+/* ---- 房间信息 ---- */
+.room-info {
+    background: rgba(0,255,100,0.1); border: 1px solid rgba(0,255,100,0.3);
+    border-radius: 12px; padding: 20px; margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto;
+}
+.room-info h3 { color: #00ff64; margin-bottom: 10px; }
+
+/* ---- 玩家列表 ---- */
+.players-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
+    margin: 30px 0; max-width: 500px; margin-left: auto; margin-right: auto;
+}
+.player-card {
+    background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 20px; text-align: center; transition: all 0.3s;
+}
+.player-card.filled { border-color: #00ff64; background: rgba(0,255,100,0.05); }
+.player-card .avatar { font-size: 2.5em; margin-bottom: 10px; }
+.player-card .name { font-weight: 600; font-size: 1.1em; }
+.player-card .role-tag {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    font-size: 0.8em; margin-top: 8px;
+}
+.role-tag.moler { background: rgba(255,165,0,0.3); color: #ffa500; }
+.role-tag.shooter { background: rgba(255,0,0,0.3); color: #ff4444; }
+
+/* ---- 角色选择 ---- */
+#role-display { font-size: 1.5em; margin: 30px 0; }
+.role-hint { color: #aaa; font-size: 1em; margin-bottom: 20px; }
+.role-picker {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
+    max-width: 450px; margin: 20px auto;
+}
+.role-btn {
+    position: relative; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 20px 15px; color: #fff; cursor: pointer;
+    transition: all 0.25s; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.role-btn:hover:not(:disabled) {
+    border-color: #ffd700; background: rgba(255,215,0,0.1);
+    transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255,215,0,0.2);
+}
+.role-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.role-btn.taken { border-color: #00ff64; background: rgba(0,255,100,0.08); }
+.role-btn.my-pick { border-color: #ffd700; background: rgba(255,215,0,0.12); box-shadow: 0 0 15px rgba(255,215,0,0.25); }
+.role-btn.locked-role { opacity: 0.25; cursor: not-allowed; border-style: dashed; }
+.role-btn-icon { font-size: 2.2em; }
+.role-btn-label { font-size: 1em; font-weight: 600; }
+.role-btn-status { font-size: 0.75em; color: #00ff64; margin-top: 2px; }
+.role-players-list {
+    margin-top: 25px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+}
+.role-player-chip {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 8px 16px; font-size: 0.9em;
+}
+.role-player-chip .chip-role { color: #ffd700; font-weight: 600; }
+
+/* ---- 串口连接 + 极坐标 ---- */
+.serial-controls {
+    display: flex; align-items: center; justify-content: center; gap: 15px;
+    margin: 20px 0; flex-wrap: wrap;
+}
+.serial-status {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px;
+}
+.status-dot { width: 12px; height: 12px; border-radius: 50%; transition: background 0.3s; }
+.status-dot.on { background: #00ff64; box-shadow: 0 0 8px #00ff64; }
+.status-dot.off { background: #ff4444; }
+.role-desc { color: #aaa; margin-bottom: 30px; }
+
+.polar-container {
+    display: flex; gap: 20px; justify-content: center; align-items: flex-start;
+    margin: 20px 0; flex-wrap: wrap;
+}
+#polar-canvas { background: #f0f3f8; border-radius: 12px; max-width: 100%; }
+.polar-legend {
+    background: rgba(245,246,250,0.95); border-radius: 12px; padding: 15px;
+    color: #2d3436; min-width: 160px;
+}
+.legend-item {
+    display: flex; flex-direction: column; gap: 4px; padding: 8px 0;
+    border-bottom: 1px solid #dfe6e9;
+}
+.legend-item:last-child { border-bottom: none; }
+.legend-color { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; }
+.legend-name { font-weight: 600; font-size: 0.9em; }
+.legend-data { font-size: 0.8em; color: #636e72; }
+
+.mode-indicator {
+    margin: 15px 0; padding: 10px 20px;
+    background: rgba(255,255,255,0.05); border-radius: 10px;
+    display: inline-block;
+}
+.mode-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    font-size: 0.85em; font-weight: 600;
+}
+.coordinate-mode { background: rgba(41,128,185,0.3); color: #3498db; }
+.pointing-mode { background: rgba(231,76,60,0.3); color: #e74c3c; }
+.mode-desc { font-size: 0.85em; color: #aaa; margin-left: 8px; }
+
+/* ---- 游戏界面 ---- */
+.game-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 30px; background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.game-header span { font-weight: 600; }
+.game-view { padding: 30px; text-align: center; }
+.moler-status { margin: 30px 0; }
+.state-badge {
+    display: inline-block; padding: 10px 30px; border-radius: 20px;
+    font-size: 1.2em; font-weight: 700;
+}
+.state-badge.waiting { background: rgba(255,255,255,0.1); color: #aaa; }
+.state-badge.popping {
+    background: rgba(255,215,0,0.3); color: #ffd700;
+    animation: pulse 0.5s infinite alternate;
+}
+.state-badge.hit { background: rgba(255,0,0,0.3); color: #ff4444; }
+.state-badge.safe { background: rgba(0,255,100,0.3); color: #00ff64; }
+@keyframes pulse { from { transform:scale(1); } to { transform:scale(1.05); } }
+.countdown { font-size: 3em; font-weight: 700; color: #ffd700; margin-top: 15px; }
+
+.btn-pop {
+    background: linear-gradient(135deg, #ffa500, #ff6600); color: #fff; border: none;
+    padding: 20px 60px; font-size: 1.5em; font-weight: 700; border-radius: 50px;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 25px rgba(255,165,0,0.4);
+}
+.btn-pop:hover:not(:disabled) { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 30px rgba(255,165,0,0.6); }
+.btn-pop:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; }
+
+/* ---- 射击者视图 ---- */
+.shooter-arena { display: flex; justify-content: center; gap: 30px; margin: 40px 0; }
+.slot {
+    width: 180px; height: 220px; background: rgba(255,255,255,0.05);
+    border: 3px solid rgba(255,255,255,0.15); border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.slot:hover:not(.disabled) { border-color: #ffd700; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(255,215,0,0.2); }
+.slot.disabled { cursor: not-allowed; opacity: 0.5; }
+.slot.pop-up { border-color: #ffa500; background: rgba(255,165,0,0.15); animation: popUp 0.3s ease-out; }
+.slot.pop-up::after { content: '\1F439'; font-size: 4em; position: absolute; top: 10px; }
+@keyframes popUp { from { transform:scale(0.8); } to { transform:scale(1); } }
+.slot.hit-flash { border-color: #ff0000; background: rgba(255,0,0,0.2); animation: hitFlash 0.5s; }
+@keyframes hitFlash { 0%,100% { background:rgba(255,0,0,0.2); } 50% { background:rgba(255,0,0,0.5); } }
+.slot.miss-flash { border-color: #00ff64; background: rgba(0,255,100,0.1); animation: missFlash 0.5s; }
+@keyframes missFlash { 0%,100% { background:rgba(0,255,100,0.1); } 50% { background:rgba(0,255,100,0.25); } }
+.slot-number { font-size: 2em; font-weight: 700; color: #ffd700; margin-bottom: 10px; }
+.slot-player { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
+.slot-status { font-size: 0.85em; padding: 4px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+.slot.pop-up .slot-status { background: rgba(255,165,0,0.3); color: #ffa500; }
+
+/* Mini polar plot in game */
+.polar-mini-container { position: relative; display: inline-block; margin: 10px auto; }
+#polar-canvas-game { background: #f0f3f8; border-radius: 12px; max-width: 100%; }
+.pointing-indicator { margin-top: 8px; font-size: 1em; }
+.pointing-label { color: #aaa; }
+.pointing-target {
+    font-weight: 700; color: #ffd700; font-size: 1.2em;
+    padding: 2px 12px; border-radius: 8px; background: rgba(255,215,0,0.15);
+}
+
+.shooter-result { font-size: 1.3em; font-weight: 700; min-height: 40px; margin: 20px 0; }
+.result-hit { color: #ff4444; }
+.result-miss { color: #00ff64; }
+
+/* ---- 计分板 ---- */
+.score-board {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 20px; margin-top: 30px; max-width: 400px; margin-left: auto; margin-right: auto;
+}
+.score-board h3 { margin-bottom: 15px; color: #ffd700; }
+.score-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.score-item:last-child { border-bottom: none; }
+.score-value { font-weight: 700; color: #ffd700; }
+
+/* ---- 结算 ---- */
+#final-scores { margin: 30px 0; }
+.final-player {
+    background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px 20px;
+    margin: 10px 0; display: flex; justify-content: space-between; align-items: center;
+}
+.final-player.winner { border: 2px solid #ffd700; background: rgba(255,215,0,0.1); }
+
+/* ---- 响应式 ---- */
+@media (max-width: 600px) {
+    h1 { font-size: 2em; }
+    .players-grid { grid-template-columns: 1fr; }
+    .shooter-arena { flex-direction: column; align-items: center; }
+    .slot { width: 150px; height: 180px; }
+    .polar-container { flex-direction: column; align-items: center; }
+    .serial-controls { flex-wrap: wrap; }
+}

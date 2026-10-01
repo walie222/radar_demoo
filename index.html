@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎯 冒头大作战 - 指向联控版</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Error overlay -->
+    <div id="error-overlay" class="error-overlay hidden">
+        <div class="error-box">
+            <h2>&#9888;&#65039; 出错了</h2>
+            <p id="error-message"></p>
+            <button onclick="location.reload()" class="btn-secondary">刷新页面</button>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 1: 登录/创建房间 ============ -->
+    <div id="screen-login" class="screen active">
+        <div class="container">
+            <h1>&#128296; 冒头大作战</h1>
+            <p class="subtitle">指向联控版 — 手机冒头，PC射击</p>
+
+            <div id="device-hint" class="device-hint"></div>
+
+            <div class="login-box">
+                <div class="form-group">
+                    <label for="player-name">你的昵称</label>
+                    <input type="text" id="player-name" placeholder="输入你的名字" maxlength="12" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="room-input">房间号（已有则加入，否则创建）</label>
+                    <input type="text" id="room-input" placeholder="留空则自动创建新房间" maxlength="6" autocomplete="off">
+                </div>
+
+                <button id="btn-enter" class="btn-primary">&#127918; 进入游戏</button>
+                <p class="hint">&#9205; 免费 | &#9889; 实时同步 | &#128101; 最多4人</p>
+            </div>
+
+            <div id="room-info-display" class="room-info hidden">
+                <h3>&#128203; 房间信息</h3>
+                <p>房间号：<strong id="display-room-id" style="font-size:1.5em; letter-spacing:4px;"></strong></p>
+                <p>将此房间号分享给好友以一起游戏</p>
+                <button id="btn-copy-code" class="btn-secondary">复制房间号</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 2: 等待大厅 ============ -->
+    <div id="waiting-screen" class="screen">
+        <div class="container">
+            <h2>&#127968; 等待大厅</h2>
+            <p>房主：<span id="host-name"></span></p>
+            <p>房间号：<strong id="display-room-id" style="font-size:1.3em; letter-spacing:3px;"></strong></p>
+
+            <div class="players-grid" id="players-grid"></div>
+
+            <button id="btn-role-select" class="btn-primary" onclick="enterRoleSelect()">选择角色</button>
+            <p class="hint" id="lobby-hint">等待所有玩家加入... 需要 <strong>至少2人</strong> 才能开始</p>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 3: 角色选择 ============ -->
+    <div id="role-select-screen" class="screen">
+        <div class="container">
+            <h2>&#127901; 选择你的角色</h2>
+            <p class="role-hint">选择一个位置，先到先得</p>
+
+            <div id="role-picker" class="role-picker"></div>
+
+            <div id="role-players-list" class="role-players-list"></div>
+
+            <button id="btn-start-host" class="btn-primary hidden" onclick="startGameFromHost()">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 4: 射击者串口连接 + 极坐标预览 ============ -->
+    <div id="serial-connect-screen" class="screen">
+        <div class="container">
+            <h2>&#127919; 射击者设备连接</h2>
+            <p class="role-desc">连接串口设备后，三个目标的位置将显示在极坐标图上</p>
+
+            <!-- Serial connection controls -->
+            <div class="serial-controls">
+                <div class="serial-status">
+                    <span class="status-dot off" id="status-dot"></span>
+                    <span id="status-text">未连接</span>
+                </div>
+                <button id="btn-connect" class="btn-secondary">&#128268; 连接串口</button>
+                <button id="btn-disconnect" class="btn-secondary" disabled>&#128398; 断开</button>
+            </div>
+
+            <!-- Polar plot canvas -->
+            <div class="polar-container">
+                <canvas id="polar-canvas" width="360" height="360"></canvas>
+                <div class="polar-legend">
+                    <div class="legend-item" id="legend-1">
+                        <span class="legend-color" style="background:#e74c3c;"></span>
+                        <span class="legend-name">1号位</span>
+                        <span class="legend-data">距离: --m | 方位: --°</span>
+                    </div>
+                    <div class="legend-item" id="legend-2">
+                        <span class="legend-color" style="background:#3498db;"></span>
+                        <span class="legend-name">2号位</span>
+                        <span class="legend-data">距离: --m | 方位: --°</span>
+                    </div>
+                    <div class="legend-item" id="legend-3">
+                        <span class="legend-color" style="background:#2ecc71;"></span>
+                        <span class="legend-name">3号位</span>
+                        <span class="legend-data">距离: --m | 方位: --°</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mode-indicator">
+                <span class="mode-badge coordinate-mode" id="mode-badge">📍 坐标模式</span>
+                <span class="mode-desc" id="mode-desc">设备位置实时更新中...</span>
+            </div>
+
+            <button id="btn-start-game" class="btn-primary" disabled>&#127918; 开始游戏</button>
+        </div>
+    </div>
+                <button id="btn-connect-serial" class="btn-secondary">&#128268; 连接串口</button>
+                <button id="btn-disconnect-serial" class="btn-secondary hidden">&#128398; 断开</button>
+            </div>
+
+            <!-- Polar plot canvas -->
+            <div class="polar-container">
+                <canvas id="polar-canvas" width="600" height="350"></canvas>
+                <div class="polar-legend" id="polar-legend">
+                    <div class="legend-item" data-device="0">
+                        <span class="legend-color" style="background:#e67e22;"></span>
+                        <span class="legend-name">设备1 (1号位)</span>
+                        <span class="legend-data" id="legend-data-0">距离: -- mm | 角度: -- °</span>
+                    </div>
+                    <div class="legend-item" data-device="1">
+                        <span class="legend-color" style="background:#2980b9;"></span>
+                        <span class="legend-name">设备2 (2号位)</span>
+                        <span class="legend-data" id="legend-data-1">距离: -- mm | 角度: -- °</span>
+                    </div>
+                    <div class="legend-item" data-device="2">
+                        <span class="legend-color" style="background:#8e44ad;"></span>
+                        <span class="legend-name">设备3 (3号位)</span>
+                        <span class="legend-data" id="legend-data-2">距离: -- mm | 角度: -- °</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mode-indicator" id="mode-indicator">
+                <span class="mode-badge coordinate-mode">&#128269; 坐标模式</span>
+                <span class="mode-desc">设备位置实时更新中...</span>
+            </div>
+
+            <button id="btn-start-from-setup" class="btn-primary" disabled>&#127918; 开始游戏</button>
+            <button id="btn-back-lobby" class="btn-secondary">返回大厅</button>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 5: 游戏主界面 ============ -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <span id="game-room"></span>
+            <span id="game-round">第 1 轮</span>
+            <span id="game-role"></span>
+        </div>
+
+        <!-- 冒头者视角 -->
+        <div id="moler-view" class="game-view hidden">
+            <div class="moler-status">
+                <div class="state-badge waiting" id="moler-state">等待中...</div>
+                <div class="countdown hidden" id="moler-countdown"></div>
+            </div>
+            <button class="btn-pop" id="btn-pop" onclick="doPop()" disabled>🐹 冒头！</button>
+            <div class="score-board">
+                <h3>📊 计分板</h3>
+                <div id="moler-scores"></div>
+            </div>
+        </div>
+
+        <!-- 射击者视角 -->
+        <div id="shooter-view" class="game-view hidden">
+            <div class="shooter-arena" id="shooter-arena"></div>
+            <div class="polar-mini-container">
+                <canvas id="polar-canvas-game" width="360" height="360"></canvas>
+                <div class="pointing-indicator">
+                    <span class="pointing-label">当前指向:</span>
+                    <span class="pointing-target" id="pointing-target-display">--</span>
+                </div>
+            </div>
+            <div class="shooter-result" id="shooter-result"></div>
+            <div class="score-board">
+                <h3>📊 计分板</h3>
+                <div id="shooter-scores"></div>
+            </div>
+        </div>
+    </div>
+
+        <!-- 冒头者视角 -->
+        <div id="view-moler" class="game-view hidden">
+            <h2>&#129433; 你是冒头者！</h2>
+            <p class="role-desc">点击按钮冒头，冒头持续1秒，小心被击中！</p>
+
+            <div class="moler-status">
+                <div id="moler-state" class="state-badge waiting">等待中</div>
+                <div id="moler-countdown" class="countdown hidden"></div>
+            </div>
+
+            <button id="btn-pop-up" class="btn-pop" disabled>&#128305; 冒头！</button>
+
+            <div class="score-board">
+                <h3>计分板</h3>
+                <div id="moler-scores"></div>
+            </div>
+        </div>
+
+        <!-- 射击者视角 -->
+        <div id="view-shooter" class="game-view hidden">
+            <h2>&#127919; 你是射击者！</h2>
+            <p class="role-desc">通过指向设备自动瞄准，打中冒头者得分！</p>
+
+            <div class="shooter-arena">
+                <div class="slot" id="slot-1" data-slot="1">
+                    <div class="slot-number">1</div>
+                    <div class="slot-player" id="player-1-name">?</div>
+                    <div class="slot-status" id="slot-1-status">空</div>
+                </div>
+                <div class="slot" id="slot-2" data-slot="2">
+                    <div class="slot-number">2</div>
+                    <div class="slot-player" id="player-2-name">?</div>
+                    <div class="slot-status" id="slot-2-status">空</div>
+                </div>
+                <div class="slot" id="slot-3" data-slot="3">
+                    <div class="slot-number">3</div>
+                    <div class="slot-player" id="player-3-name">?</div>
+                    <div class="slot-status" id="slot-3-status">空</div>
+                </div>
+            </div>
+
+            <!-- Live polar plot in game -->
+            <div class="polar-mini-container">
+                <canvas id="polar-canvas-game" width="400" height="250"></canvas>
+                <div class="pointing-indicator" id="pointing-indicator">
+                    <span class="pointing-label">当前指向:</span>
+                    <span class="pointing-target" id="pointing-target">--</span>
+                </div>
+            </div>
+
+            <div class="shooter-result" id="shooter-result"></div>
+
+            <div class="score-board">
+                <h3>计分板</h3>
+                <div id="shooter-scores"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 阶段 6: 结算 ============ -->
+    <div id="result-screen" class="screen">
+        <div class="container">
+            <h2>&#127942; 游戏结束</h2>
+            <div id="final-scores"></div>
+            <button id="btn-restart" class="btn-primary">再来一局</button>
+            <button id="btn-back-lobby-final" class="btn-secondary">返回大厅</button>
+        </div>
+    </div>
+
+    <!-- Error handler (must be before SDK load) -->
+    <script>
+        function showError(msg) {
+            document.getElementById('error-message').textContent = msg;
+            document.getElementById('error-overlay').classList.remove('hidden');
+        }
+    </script>
+
+    <!-- PubNub SDK v4.29.5 (last stable with classic API) -->
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.29.5.min.js"
+            onload="console.log('[SDK] PubNub 4.29.5 loaded OK'); window._pnReady=true"
+            onerror="showError('PubNub SDK 加载失败，请检查网络或刷新页面。')"></script>
+
+    <!-- Our code -->
+    <script src="js/config.js"></script>
+    <script src="js/polar_plot.js"></script>
+    <script src="js/serial_reader.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
