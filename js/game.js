@@ -484,6 +484,15 @@ function showSerialScreen() {
             G.polarPlot.render();
         }
         updateLegend(addr, dis, azi);
+
+        // Real-time pointing target update during gameplay
+        if (G.phase === 'game' && G.polarPlot && G.polarPlot.mode === 'pointing') {
+            var idx = G.polarPlot.getClosestToZero();
+            var ptEl = $('#pointing-target');
+            if (ptEl) {
+                ptEl.textContent = idx >= 0 ? (idx + 1) + '号位' : '未瞄准';
+            }
+        }
     };
 
     G.serialReader.onError = function(msg) {
@@ -712,6 +721,14 @@ function botPop() {
 
     startPopCountdown(POP_DURATION);
 
+    // If shooter is playing, auto-shoot from pointing when bot pops too
+    var p = myP();
+    if (p && p.role === 'shooter') {
+        setTimeout(function() {
+            autoShootFromPointing();
+        }, 200);
+    }
+
     setTimeout(function() {
         if (G.active && G.popped && !G.shot) {
             resetSlots();
@@ -765,13 +782,18 @@ function onPop(m) {
         return;
     }
 
-    // Shooter — show pop-up visually
+    // Shooter — show pop-up visually, then auto-shoot based on pointing
     var se = $('#slot-' + m.slot);
     if (se) se.classList.add('pop-up');
     var st = $('#slot-' + m.slot + '-status');
     if (st) st.textContent = m.name + ' 冒头了！';
 
     startPopCountdown(G.popDeadline - Date.now());
+
+    // Auto-shoot from pointing device (serial data)
+    setTimeout(function() {
+        autoShootFromPointing();
+    }, 200); // Small delay so visual shows first
 
     var remaining = Math.max(G.popDeadline - Date.now(), 100);
     setTimeout(function() {
@@ -782,14 +804,39 @@ function onPop(m) {
     }, remaining);
 }
 
-// ---- SHOOT ----
-function doShoot(slotNum) {
+// ---- AUTO SHOOT from pointing device ----
+function autoShootFromPointing() {
     var p = myP();
     if (!p || p.role !== 'shooter') return;
-    if (!G.popped || !G.active) return;
-    if (G.shot) return;
+    if (!G.popped || !G.active || G.shot) return;
     if (G.popDeadline && Date.now() > G.popDeadline) return;
 
+    // Get pointing target from polar plot
+    var idx = -1;
+    if (G.polarPlot) {
+        idx = G.polarPlot.getClosestToZero(); // returns 0/1/2 or -1
+    }
+
+    var ptEl = $('#pointing-target');
+
+    if (idx === -1) {
+        // Not aiming at any target
+        if (ptEl) ptEl.textContent = '未瞄准';
+        var res = $('#shooter-result');
+        if (res) res.innerHTML = '<span class="result-miss">⚠️ 未瞄准 — 没有设备对准目标</span>';
+        G.shot = true;
+        setTimeout(function() { endRound('unaimed'); }, 1500);
+        return;
+    }
+
+    // idx 0→slot1, 1→slot2, 2→slot3
+    var slotNum = idx + 1;
+    if (ptEl) ptEl.textContent = slotNum + '号位';
+
+    // Update polar plot to pointing mode
+    if (G.polarPlot) G.polarPlot.switchToPointing(idx);
+
+    // Execute shot
     G.shot = true;
     var hit = (slotNum === G.molerSlot);
 
@@ -802,12 +849,11 @@ function doShoot(slotNum) {
     var res = $('#shooter-result');
     if (hit) {
         if (se) se.classList.add('hit-flash');
-        if (res) res.innerHTML = '<span class="result-hit">💥 击中！+10分</span>';
+        if (res) res.innerHTML = '<span class="result-hit">💥 击中 ' + slotNum + '号位！+10分</span>';
     } else {
         if (se) se.classList.add('miss-flash');
-        if (res) res.innerHTML = '<span class="result-miss">😅 打空了！</span>';
+        if (res) res.innerHTML = '<span class="result-miss">😅 打中 ' + slotNum + '号位，但没冒头！</span>';
     }
-    $$('.slot').forEach(function(s) { s.classList.add('disabled'); });
 
     var scores = {};
     for (var k in G.players) scores[k] = G.players[k].score;
@@ -815,6 +861,12 @@ function doShoot(slotNum) {
     pub({ type: 'fire', pid: G.id, slot: slotNum, ms: G.molerSlot, hit: hit, mid: G.molerId, rnd: G.round, scores: scores });
 
     setTimeout(function() { endRound(hit ? 'hit' : 'miss'); }, 1500);
+}
+
+// ---- Manual SHOOT (disabled — kept for compatibility) ----
+function doShoot(slotNum) {
+    // Shooting is now automatic via pointing device. This function is deprecated.
+    return;
 }
 
 function onFire(m) {
@@ -1010,11 +1062,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var bp = $('#btn-pop-up');
     if (bp) bp.addEventListener('click', doPop);
 
-    $$('.slot').forEach(function(sl) {
-        sl.addEventListener('click', function() {
-            doShoot(parseInt(sl.dataset.slot));
-        });
-    });
+    // Shooting is now automatic via serial pointing device — no slot click handlers needed
+    // $$('.slot').forEach(function(sl) {
+    //     sl.addEventListener('click', function() {
+    //         doShoot(parseInt(sl.dataset.slot));
+    //     });
+    // });
 
     var bb = $('#btn-back-lobby');
     if (bb) bb.addEventListener('click', restartGame);

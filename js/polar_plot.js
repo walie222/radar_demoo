@@ -44,7 +44,16 @@ var PolarPlot = (function() {
         };
 
         self.render = function() {
-            var c = ctx, s = size, cx = self.cx, cy = self.cy, mr = self.maxR;
+            // Render on primary canvas
+            _draw(ctx);
+            // Also render on game canvas if set (during gameplay)
+            if (self.gameCtx) {
+                _draw(self.gameCtx);
+            }
+        };
+
+        function _draw(c) {
+            var s = size, cx = self.cx, cy = self.cy, mr = self.maxR;
             // Background
             c.fillStyle = '#f5f6fa';
             c.fillRect(0, 0, s, s);
@@ -138,10 +147,12 @@ var PolarPlot = (function() {
         self.copyTo = function(targetCanvasId) {
             var tc = document.getElementById(targetCanvasId);
             if (!tc) return;
-            var tctx = tc.getContext('2d');
+            self.gameCanvas = tc;
+            self.gameCtx = tc.getContext('2d');
             tc.width = size;
             tc.height = size;
-            tctx.drawImage(canvas, 0, 0);
+            // Do a full render on both canvases instead of image copy
+            self.render();
         };
 
         // Initial render
