@@ -1,83 +1,108 @@
-// ============================================
-// Web Serial API 串口读取器
-// ============================================
+/* ============================================
+   Web Serial API 串口读取器
+   ============================================ */
 
-class SerialReader {
-    constructor() {
-        this.port = null;
-        this.reader = null;
-        this.decoder = new TextDecoder();
-        this.onData = null;     // (addr, dis, azi) => void
-        this.onError = null;   // (msg) => void
-        this.running = false;
-        this.buffer = '';
+var SerialReader = (function() {
+    function create() {
+        return {
+            port: null,
+            reader: null,
+            running: false,
+            buffer: '',
+            onData: null,  // callback(addr, dis, azi)
+            onError: null, // callback(msg)
+        };
     }
 
-    async requestPort() {
-        if (!navigator.serial) {
-            throw new Error('浏览器不支持 Web Serial API，请使用 Chrome/Edge');
-        }
-        try {
-            this.port = await navigator.serial.requestPort({});
-            await this.port.open({ baudRate: 115200 });
-            return true;
-        } catch (e) {
-            if (this.onError) this.onError(e.message);
-            throw e;
-        }
-    }
-
-    async startReading() {
-        if (!this.port) return;
-        this.running = true;
-        const transport = this.port.readable.getReader();
-        this.reader = transport;
-
-        while (this.running && this.port.readable) {
-            try {
-                const { value, done } = await this.reader.read();
-                if (done) break;
-                this.buffer += this.decoder.decode(value, { stream: true });
-
-                // 按行解析
-                const lines = this.buffer.split('\n');
-                this.buffer = lines.pop(); // 保留不完整的最后一行
-
-                for (const line of lines) {
-                    this.parseLine(line.trim());
-                }
-            } catch (e) {
-                if (this.onError) this.onError(e.message);
-                break;
+    function requestPort(self) {
+        return new Promise(function(resolve, reject) {
+            if (!navigator.serial) {
+                var err = new Error('浏览器不支持 Web Serial API，请使用 Chrome/Edge');
+                if (self.onError) self.onError(err.message);
+                reject(err);
+                return;
             }
+            navigator.serial.requestPort({}).then(function(port) {
+                self.port = port;
+                return port.open({ baudRate: SERIAL.baudRate });
+            }).then(function() {
+                resolve(true);
+            }).catch(function(e) {
+                if (self.onError) self.onError(e.message);
+                reject(e);
+            });
+        });
+    }
+
+    function startReading(self) {
+        if (!self.port) return;
+        self.running = true;
+        var transport = self.port.readable.getReader();
+        self.reader = transport;
+        var decoder = new TextDecoder();
+
+        function readLoop() {
+            if (!self.running || !self.port) return;
+            transport.read().then(function(result) {
+                if (!self.running) return;
+                if (result.done) return;
+                self.buffer += decoder.decode(result.value, { stream: true });
+
+                var lines = self.buffer.split('\n');
+                self.buffer = lines.pop();
+
+                for (var i = 0; i < lines.length; i++) {
+                    parseLine(self, lines[i].trim());
+                }
+
+                readLoop();
+            }).catch(function(e) {
+                if (self.onError) self.onError(e.message);
+            });
+        }
+        readLoop();
+    }
+
+    function parseLine(self, line) {
+        if (!line || !self.onData) return;
+        // Format: addr:XX dis:NNN azi:NNN
+        var m = line.match(/addr:(\d+)\s+dis:(\d+(?:\.\d+)?)\s+azi:(\d+(?:\.\d+)?)/);
+        if (m) {
+            self.onData(parseInt(m[1]), parseFloat(m[2]), parseFloat(m[3]));
         }
     }
 
-    parseLine(line) {
-        if (!line) return;
-        // 格式: addr:XX dis:NNN azi:NNN
-        const match = line.match(/addr:(\d+)\s+dis:(\d+(?:\.\d+)?)\s+azi:(\d+(?:\.\d+)?)/);
-        if (match && this.onData) {
-            const addr = parseInt(match[1]);
-            const dis = parseFloat(match[2]);
-            const azi = parseFloat(match[3]);
-            this.onData(addr, dis, azi);
+    function close(self) {
+        return new Promise(function(resolve) {
+            self.running = false;
+            if (self.reader) {
+                self.reader.cancel().catch(function(){}).then(function() {
+                    self.reader = null;
+                    doClose(self);
+                });
+            } else {
+                doClose(self);
+            }
+        });
+    }
+
+    function doClose(self) {
+        if (self.port) {
+            self.port.close().catch(function(){}).then(function() {
+                self.port = null;
+            });
         }
     }
 
-    async close() {
-        this.running = false;
-        if (this.reader) {
-            try { await this.reader.cancel(); } catch (_) {}
-            this.reader = null;
-        }
-        if (this.port) {
-            try { await this.port.close(); } catch (_) {}
-            this.port = null;
-        }
+    function isConnected(self) {
+        return self.port !== null && self.running;
     }
 
-    isConnected() {
-        return this.port !== null && this.running;
-    }
-}
+    return {
+        create: create,
+        requestPort: requestPort,
+        startReading: startReading,
+        close: close,
+        isConnected: isConnected,
+    };
+})();

@@ -1,17 +1,30 @@
-// ============================================
-// 冒头大作战 - 指向联控版 配置
-// ============================================
+/* ============================================
+   游戏配置
+   ============================================ */
 
-const PUBNUB = {
-    subscribeKey: 'sub-c-486e9d60-f711-11ed-a5aa-123a5a76baa4',
-    publishKey: 'pub-c-30ea27f9-14c2-48a0-98b5-b07eeb506b04'
+const CONFIG = {
+    PUBNUB: {
+        publishKey: 'pub-c-8f6fe818-ef2e-4122-9993-e790f721c8ea',
+        subscribeKey: 'sub-c-632c8bc5-da75-4b54-af01-a18aae16138a',
+    },
+
+    GAME: {
+        popUpDuration: 5,
+        shootWindow: 1,
+        totalGameTime: 300,
+        roundCooldown: 2,
+        maxPlayers: 4,
+    },
+
+    CHANNELS: {
+        main: (roomCode) => `room-${roomCode}-main`,
+        state: (roomCode) => `room-${roomCode}-state`,
+    },
 };
 
-const GAME = {
-    shootWindow: 1,       // 冒头持续秒数
-    rounds: 5,            // 总回合数
-    hitScore: 10,         // 射击者命中得分
-    missPenalty: -5,      // 射击者打空扣分
-    popMin: 2000,         // 冒头间隔最小(ms)
-    popMax: 5000          // 冒头间隔最大(ms)
+// ---- Serial config ----
+var SERIAL = {
+    baudRate: 115200,
+    // Data format from devices: addr:XX dis:NNN azi:NNN
+    // addr 01/02/03 maps to moler slot 1/2/3
 };
