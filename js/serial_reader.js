@@ -1,5 +1,5 @@
 /* ============================================
-   Web Serial API 串口读取器
+   Web Serial API 串口读取器 (修复增强版)
    ============================================ */
 
 var SerialReader = (function() {
@@ -24,7 +24,9 @@ var SerialReader = (function() {
             }
             navigator.serial.requestPort({}).then(function(port) {
                 self.port = port;
-                return port.open({ baudRate: SERIAL.baudRate });
+                // 确保 SERIAL 对象在全局可访问，设置默认波特率备用
+                var baud = (typeof SERIAL !== 'undefined' && SERIAL.baudRate) ? SERIAL.baudRate : 9600;
+                return port.open({ baudRate: baud });
             }).then(function() {
                 resolve(true);
             }).catch(function(e) {
@@ -35,31 +37,51 @@ var SerialReader = (function() {
     }
 
     function startReading(self) {
-        if (!self.port) return;
+        if (!self.port || self.running) return;
         self.running = true;
+        
+        // 获取 reader 实例
         var transport = self.port.readable.getReader();
         self.reader = transport;
         var decoder = new TextDecoder();
 
         function readLoop() {
-            if (!self.running || !self.port) return;
+            if (!self.running) return;
+
             transport.read().then(function(result) {
-                if (!self.running) return;
-                if (result.done) return;
-                self.buffer += decoder.decode(result.value, { stream: true });
-
-                var lines = self.buffer.split('\n');
-                self.buffer = lines.pop();
-
-                for (var i = 0; i < lines.length; i++) {
-                    parseLine(self, lines[i].trim());
+                // 如果读取完成或主动关闭，安全释放流锁
+                if (result.done) {
+                    if (self.reader) {
+                        self.reader.releaseLock();
+                        self.reader = null;
+                    }
+                    return;
                 }
 
-                readLoop();
+                if (result.value) {
+                    self.buffer += decoder.decode(result.value, { stream: true });
+                    var lines = self.buffer.split(/\r?\n/); // 兼容 \r\n 和 \n
+                    self.buffer = lines.pop(); // 最后一项是不完整的残帧，留回 buffer
+
+                    for (var i = 0; i < lines.length; i++) {
+                        parseLine(self, lines[i].trim());
+                    }
+                }
+
+                if (self.running) {
+                    readLoop();
+                }
             }).catch(function(e) {
-                if (self.onError) self.onError(e.message);
+                // 设备异常拔出或流读取错误处理
+                if (self.reader) {
+                    try { self.reader.releaseLock(); } catch(err) {}
+                    self.reader = null;
+                }
+                self.running = false;
+                if (self.onError) self.onError('串口读取错误: ' + e.message);
             });
         }
+
         readLoop();
     }
 
@@ -68,30 +90,47 @@ var SerialReader = (function() {
         // Format: addr:XX dis:NNN azi:NNN
         var m = line.match(/addr:(\d+)\s+dis:(\d+(?:\.\d+)?)\s+azi:(\d+(?:\.\d+)?)/);
         if (m) {
-            self.onData(parseInt(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+            self.onData(parseInt(m[1], 10), parseFloat(m[2]), parseFloat(m[3]));
         }
     }
 
     function close(self) {
         return new Promise(function(resolve) {
             self.running = false;
+
+            var cleanup = function() {
+                if (self.port) {
+                    self.port.close().then(function() {
+                        self.port = null;
+                        resolve(true);
+                    }).catch(function(e) {
+                        self.port = null;
+                        resolve(false);
+                    });
+                } else {
+                    resolve(true);
+                }
+            };
+
             if (self.reader) {
-                self.reader.cancel().catch(function(){}).then(function() {
-                    self.reader = null;
-                    doClose(self);
+                // 取消读取流并释放锁
+                self.reader.cancel().then(function() {
+                    if (self.reader) {
+                        try { self.reader.releaseLock(); } catch(e) {}
+                        self.reader = null;
+                    }
+                    cleanup();
+                }).catch(function() {
+                    if (self.reader) {
+                        try { self.reader.releaseLock(); } catch(e) {}
+                        self.reader = null;
+                    }
+                    cleanup();
                 });
             } else {
-                doClose(self);
+                cleanup();
             }
         });
-    }
-
-    function doClose(self) {
-        if (self.port) {
-            self.port.close().catch(function(){}).then(function() {
-                self.port = null;
-            });
-        }
     }
 
     function isConnected(self) {
